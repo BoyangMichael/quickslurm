@@ -6,6 +6,8 @@ Clone this repository.
 ```bash
 git clone https://gitlab.ifpen.fr/xub/quickslurm.git
 ```
+_Note: If your remote machine can not access internet, copy the folder to your remote using `rsync` or `scp`._
+
 Add path to this repository in your `.bashrc` (or `.bash_profile` for MacOS).
 ```bash
 export PATH="/path/to/quickslurm:$PATH"
@@ -34,6 +36,7 @@ Notes:
   - user.conf => user configuration file (if exists, will override default.conf)
   - First field of COMMANDS is recognized as PROGRAM
   - Configuration for PROGRAM wil be used if PROGRAM_config exist in the configuration file.
+  - If given, SBATCH_OPTIONS will override existing configurations.
 ```
 
 > Note: SAVE YOUR FINGERS by using the alias **`qs`** instead of `quickslurm`!

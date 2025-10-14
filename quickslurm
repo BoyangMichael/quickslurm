@@ -117,10 +117,10 @@ function setup_commands {
     if [[ -n $stdout && $stdout != /dev/* ]]; then
         COMMANDS+=" > $(printf '%q' "$stdout")"
     fi
-    
+
     # Append Pre-commands
-    if [ -n "${config[PRECOMMANDS]}" ] ; then
-        COMMANDS="${config[PRECOMMANDS]}; $COMMANDS"
+    if [ -n "${config[PRECMD]}" ] ; then
+        COMMANDS="${config[PRECMD]}; $COMMANDS"
     fi
     }
 

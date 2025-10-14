@@ -40,3 +40,22 @@ Notes:
 ```
 
 > Note: SAVE YOUR FINGERS by using the alias **`qs`** instead of `quickslurm`!
+
+## Customization
+Create a file named `user.conf` (or copy from [default.conf](default.conf)), and add your own stach configurations following the same syntax.
+```bash
+# Name of the profile MUST be "PROGRAM_config",
+# where PROGRAM MUST be the same as your executable
+# so that the script can detect.
+
+declare -g -A g16_config=(
+  [WCKEY]="xfj45001"
+  [NODES]=1
+  [NTASK]=8
+  [JOBNAME]="gaussian"
+  [TIME]="48:00:00"
+  [STDERR]="job_%j.err"
+  [STDOUT]="job_%j.out"
+  [PRECMD]="ml Gaussian/16-C.01"
+)
+```

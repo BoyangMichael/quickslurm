@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+show_help() {
+    cat >/dev/tty <<'EOF'
+quickslurm - A wrapper to quickly submit a single job using Slurm
+
+Usage:
+  quickslurm COMMANDS
+  quickslurm [-sbatch|--sbatch-options "<SBATCH_OPTIONS>"] COMMANDS
+  quickslurm --help | -h
+
+Examples:
+  quickslurm g16 < input.gjf > output.g16
+  quickslurm --sbatch-options "-n 16 -J test_run" g16 < input.gjf > output.g16
+  quickslurm g16 -v -s < water.gjf > water.log
+
+Notes:
+  - default.conf => default configuration file
+  - user.conf => user configuration file (if exists, will override default.conf)
+  - First field of COMMANDS is recognized as PROGRAM
+  - Configuration for PROGRAM wil be used if PROGRAM_config exist in the configuration file.
+
+EOF
+}
+
+function initialize {
+    # bin dir
+    bin_dir=$( dirname "$(realpath "$0")" )
+    # config file
+    config_file_default="$bin_dir/default.conf"
+    config_file_user="$bin_dir/user.conf"
+    }
+
+function check_sbatch {
+    if [ -z "$(command -v sbatch)" ] ; then
+        echo "Error: sbatch not found" >/dev/tty
+        exit 1
+    fi
+    }
+
+function load_config {
+    if [ -f "$config_file_user" ] ; then
+        config_file="$config_file_user"
+    else
+        if [ -f "$config_file_default" ] ; then
+            config_file="$config_file_default"
+        else
+            echo "Error: no config file found" >/dev/tty
+            exit 1
+        fi
+    fi
+    source "$config_file"
+    }
+
+function parse_arguments {
+
+    # Check number of arguments
+    if [ $# -eq 0 ] ; then
+        echo "quickslurm [-sbatch|--sbatch-options \"<SBATCH_OPTIONS>\"] COMMANDS" >/dev/tty
+        exit 1
+    fi
+
+    # Parse 
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            # Show help
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            # Overwrite sbatch options
+            -sbatch|--sbatch-options)
+                SBATCH_OPTIONS="$2"
+                shift 2
+                ;;
+            # Commands and programs
+            *)
+                COMMANDS="$*"
+                PROGRAM="$1"
+                break
+                ;;
+        esac
+    done
+    }
+
+copy_assoc_array() {
+    local src="$1" dst="$2"
+    declare_cmd=$(declare -p "$src" | sed -r "s/$src/$dst/" | sed 's/declare -A/declare -g -A/')
+    eval "${declare_cmd}"
+}
+
+function setup_config {
+    CONFIG_DEFAULT="default_config"
+    CONFIG_PROGRAM="${PROGRAM}_config"
+    if declare -p "$CONFIG_PROGRAM" &> /dev/null ; then
+        copy_assoc_array "$CONFIG_PROGRAM" config
+    else
+        echo -e "Warning: Unsupported program '$PROGRAM'...\nDefault sbatch configuration will be used..." >/dev/tty
+        copy_assoc_array "$CONFIG_DEFAULT" config
+        config[JOBNAME]="$PROGRAM"
+    fi
+}
+
+
+function setup_commands {
+    # Read redirections
+    stdin=$(lsof -a -p $$ -d 0 2>/dev/null |tail -n 1|sed -r 's/^[^\/]*(\/.*)$/\1/' || true)
+    stdout=$(lsof -a -p $$ -d 1 2>/dev/null |tail -n 1|sed -r 's/^[^\/]*(\/.*)$/\1/' || true)
+    # stderr=$(lsof -a -p $$ -d 2 2>/dev/null |tail -n 1|sed -r 's/^[^\/]*(\/.*)$/\1/' || true)
+
+    # Append stdin
+    if [[ -n $stdin && $stdin != /dev/* ]]; then
+        COMMANDS+=" < $(printf '%q' "$stdin")"
+    fi
+
+    # Append stdout
+    if [[ -n $stdout && $stdout != /dev/* ]]; then
+        COMMANDS+=" > $(printf '%q' "$stdout")"
+    fi
+    
+    # Append Pre-commands
+    if [ -n "${config[PRECOMMANDS]}" ] ; then
+        COMMANDS="${config[PRECOMMANDS]}; $COMMANDS"
+    fi
+    }
+
+function run_sbatch {
+    # Construct sbatch command
+    sbatch_cmd="sbatch --wckey ${config[WCKEY]} -N ${config[NODES]} -n ${config[NCPU]} -J ${config[JOBNAME]} -e ${config[STDERR]} -o ${config[STDOUT]} -t ${config[TIME]} $SBATCH_OPTIONS --wrap=\"$COMMANDS\""
+    
+    # Submit job
+    echo "SENT: $sbatch_cmd" >/dev/tty
+    eval "$sbatch_cmd"
+    }
+
+# Main script
+initialize
+check_sbatch
+load_config
+parse_arguments "$@"
+setup_config
+setup_commands
+run_sbatch

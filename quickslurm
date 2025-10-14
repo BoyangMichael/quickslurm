@@ -101,6 +101,72 @@ function setup_config {
     fi
 }
 
+function override_config {
+    if [ -n "$SBATCH_OPTIONS" ] ; then
+        eval "set -- $SBATCH_OPTIONS"
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --wckey)
+                    config[WCKEY]="$2"
+                    shift 2
+                    ;;
+                -N|--nodes)
+                    config[NODES]="$2"
+                    shift 2
+                    ;;
+                --nodes=*)
+                    config[NODES]="${1#*=}"
+                    shift 1
+                    ;;
+                -n|--ntasks)
+                    config[NTASK]="$2"
+                    shift 2
+                    ;;
+                --ntasks=*)
+                    config[NTASK]="${1#*=}"
+                    shift 1
+                    ;;
+                -J|--job-name)
+                    config[JOBNAME]="$2"
+                    shift 2
+                    ;;
+                --job-name=*)
+                    config[JOBNAME]="${1#*=}"
+                    shift 1
+                    ;;
+                -e|--error)
+                    config[STDERR]="$2"
+                    shift 2
+                    ;;
+                --error=*)
+                    config[STDERR]="${1#*=}"
+                    shift 1
+                    ;;
+                -o|--output)
+                    config[STDOUT]="$2"
+                    shift 2
+                    ;;
+                --output=*)
+                    config[STDOUT]="${1#*=}"
+                    shift 1
+                    ;;
+                -t|--time)
+                    config[TIME]="$2"
+                    shift 2
+                    ;;
+                --time=*)
+                    config[TIME]="${1#*=}"
+                    shift 1
+                    ;;
+                # Collect other sbatch options
+                *)
+                    SBATCH_OPTIONS_OTHERS="$*"
+                    break
+                    ;;
+            esac
+        done
+    fi
+}
 
 function setup_commands {
     # Read redirections
@@ -126,7 +192,7 @@ function setup_commands {
 
 function run_sbatch {
     # Construct sbatch command
-    sbatch_cmd="sbatch --wckey ${config[WCKEY]} -N ${config[NODES]} -n ${config[NCPU]} -J ${config[JOBNAME]} -e ${config[STDERR]} -o ${config[STDOUT]} -t ${config[TIME]} $SBATCH_OPTIONS --wrap=\"$COMMANDS\""
+    sbatch_cmd="sbatch --wckey ${config[WCKEY]} -N ${config[NODES]} -n ${config[NTASK]} -J ${config[JOBNAME]} -e ${config[STDERR]} -o ${config[STDOUT]} -t ${config[TIME]} $SBATCH_OPTIONS_OTHERS --wrap=\"$COMMANDS\""
     
     # Submit job
     echo "SENT: $sbatch_cmd" >/dev/tty
@@ -139,5 +205,6 @@ check_sbatch
 load_config
 parse_arguments "$@"
 setup_config
+override_config
 setup_commands
 run_sbatch

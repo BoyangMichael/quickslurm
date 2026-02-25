@@ -75,8 +75,9 @@ function parse_arguments {
                 ;;
             # Commands and programs
             *)
-                COMMANDS="$*"
                 PROGRAM="$1"
+                shift 1
+                COMMANDS_REMAINING="$*"
                 break
                 ;;
         esac
@@ -169,6 +170,16 @@ function override_config {
 }
 
 function setup_commands {
+    # Set up full command
+    # If FULLPATH is given: use it to execute the program
+    if [ -n "${config[FULLPATH]}" ] ; then
+        PROGRAM_FULLPATH="${config[FULLPATH]}"
+        COMMANDS="${PROGRAM_FULLPATH} ${COMMANDS_REMAINING}"
+    # If FULLPATH is not given: use the program name as is
+    else
+        COMMANDS="${PROGRAM} ${COMMANDS_REMAINING}"
+    fi
+
     # Read redirections
     stdin=$(lsof -a -p $$ -d 0 2>/dev/null |tail -n 1|sed -r 's/^[^\/]*(\/.*)$/\1/' || true)
     stdout=$(lsof -a -p $$ -d 1 2>/dev/null |tail -n 1|sed -r 's/^[^\/]*(\/.*)$/\1/' || true)

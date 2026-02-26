@@ -60,6 +60,9 @@ function parse_arguments {
         exit 1
     fi
 
+    # Default values
+    MAIL_TOGGLE=false
+
     # Parse 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -67,6 +70,11 @@ function parse_arguments {
             -h|--help)
                 show_help
                 exit 0
+                ;;
+            # toggle mail notification
+            -m|--mail)
+                MAIL_TOGGLE=true
+                shift 1
                 ;;
             # Overwrite sbatch options
             -sbatch|--sbatch-options)
@@ -201,9 +209,22 @@ function setup_commands {
     fi
     }
 
+function setup_mail {
+    MAIL_cmd=""
+    if [ "$MAIL_TOGGLE" = true ] ; then
+        MAIL_TYPE="${MAIL_TYPE:-'END,FAIL'}"
+        if [ -z "$MAIL_USER" ] ; then
+            echo "Error: MAIL_USER is not set. Please set MAIL_USER in the configuration file or provide an email address in the user.conf file." >/dev/tty
+            exit 1
+        else
+            MAIL_cmd="--mail-type=${MAIL_TYPE} --mail-user=${MAIL_USER}"
+        fi
+    fi
+    }
+
 function run_sbatch {
     # Construct sbatch command
-    sbatch_cmd="sbatch --wckey ${config[WCKEY]} -N ${config[NODES]} -n ${config[NTASK]} -J ${config[JOBNAME]} -e ${config[STDERR]} -o ${config[STDOUT]} -t ${config[TIME]} $SBATCH_OPTIONS_OTHERS --wrap=\"$COMMANDS\""
+    sbatch_cmd="sbatch --wckey ${config[WCKEY]} -N ${config[NODES]} -n ${config[NTASK]} -J ${config[JOBNAME]} -e ${config[STDERR]} -o ${config[STDOUT]} -t ${config[TIME]} $SBATCH_OPTIONS_OTHERS $MAIL_cmd --wrap=\"$COMMANDS\""
     
     # Submit job
     echo "SENT: $sbatch_cmd" >/dev/tty
@@ -218,4 +239,5 @@ parse_arguments "$@"
 setup_config
 override_config
 setup_commands
+setup_mail
 run_sbatch

@@ -14,11 +14,18 @@ Examples:
   quickslurm --sbatch-options "-n 16 -J test_run" g16 < input.gjf > output.g16
   quickslurm g16 -v -s < water.gjf > water.log
 
+Options:
+  -h, --help                 Show this help message and exit
+  -m, --mail                 Toggle email notification (default: off)
+  -sbatch, --sbatch-options  Overwrite or add sbatch options according to 
+                             sbatch syntex (e.g. -n 16 -J test_run)
+
 Notes:
   - default.conf => default configuration file
   - user.conf => user configuration file (if exists, will override default.conf)
   - First field of COMMANDS is recognized as PROGRAM
-  - Configuration for PROGRAM wil be used if PROGRAM_config exist in the configuration file.
+  - Configuration for PROGRAM wil be used if PROGRAM_config exist in the 
+    configuration file.
 
 EOF
 }

@@ -31,12 +31,18 @@ Examples:
   quickslurm --sbatch-options "-n 16 -J test_run" g16 < input.gjf > output.g16
   quickslurm g16 -v -s < water.gjf > water.log
 
+Options:
+  -h, --help                 Show this help message and exit
+  -m, --mail                 Toggle email notification (default: off)
+  -sbatch, --sbatch-options  Overwrite or add sbatch options according to 
+                             sbatch syntex (e.g. -n 16 -J test_run)
+
 Notes:
   - default.conf => default configuration file
   - user.conf => user configuration file (if exists, will override default.conf)
   - First field of COMMANDS is recognized as PROGRAM
-  - Configuration for PROGRAM wil be used if PROGRAM_config exist in the configuration file.
-  - If given, SBATCH_OPTIONS will override existing configurations.
+  - Configuration for PROGRAM wil be used if PROGRAM_config exist in the 
+    configuration file.
 ```
 
 > Note: SAVE YOUR FINGERS by using the alias **`qs`** instead of `quickslurm`!
@@ -52,10 +58,11 @@ declare -g -A g16_config=(
   [WCKEY]="xfj45001"
   [NODES]=1
   [NTASK]=8
-  [JOBNAME]="gaussian"
+  [JOBNAME]="gaussian"            # Remember to check availability of name
   [TIME]="48:00:00"
   [STDERR]="job_%j.err"
   [STDOUT]="job_%j.out"
-  [PRECMD]="ml Gaussian/16-C.01"
+  [PRECMD]="ml Gaussian/16-C.01"  # Command to run before running program
+  [FULLPATH]=""                   # If given, use full path for execution
 )
 ```

@@ -228,7 +228,7 @@ function run_sbatch {
     
     # Submit job
     echo "SENT: $sbatch_cmd" >/dev/tty
-    eval "$sbatch_cmd"
+    eval "$sbatch_cmd" >/dev/tty
     }
 
 # Main script
